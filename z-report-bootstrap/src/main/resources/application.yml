@@ -1,0 +1,26 @@
+server:
+  port: 8091
+
+spring:
+  application:
+    name: z-report
+
+# ---- 数据源 (z-boot 约定: z.base.db.{module}.* 缺省 fallback 到 default) ----
+# 配置存在时自动注册 id=z-base-db-report 的 JDBC 源; 凭证由环境变量注入, 不落代码库
+z:
+  base:
+    db:
+      report:
+        host: ${ZREPORT_DB_HOST:}
+        port: ${ZREPORT_DB_PORT:3306}
+        database: ${ZREPORT_DB_NAME:}
+        username: ${ZREPORT_DB_USER:root}
+        password: ${ZREPORT_DB_PASSWORD:}
+
+# M3: LLM 配置示例 (OpenAI 兼容, 密钥走环境变量)
+# z:
+#   report:
+#     llm:
+#       base-url: https://dashscope.aliyuncs.com/compatible-mode/v1
+#       api-key: ${LLM_API_KEY:}
+#       model: qwen-plus

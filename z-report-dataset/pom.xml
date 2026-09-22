@@ -1,0 +1,37 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<project xmlns:xsi="http://www.apache.org/XMLSchema-instance"
+         xmlns="http://maven.apache.org/POM/4.0.0"
+         xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd">
+    <modelVersion>4.0.0</modelVersion>
+
+    <parent>
+        <groupId>io.github.yuku123</groupId>
+        <artifactId>z-report</artifactId>
+        <version>1.0.0-SNAPSHOT</version>
+    </parent>
+
+    <artifactId>z-report-dataset</artifactId>
+    <packaging>jar</packaging>
+    <name>z-report :: dataset (★核心: 内存 typed 列式引擎: 多键 join/groupby/表达式/过滤)</name>
+    <description>
+        类型化列式 Table 引擎 (STRING/INT/DOUBLE/BOOL/DATE + 空值语义),
+        API 形态对齐 pandas (join/groupby/filter/assign/sort);
+        表达式求值为 M1 内置最小实现, 预留 z-util-expr 切换缝;
+        转换 DAG 编排后续接 z-util-workflow。
+    </description>
+
+    <dependencies>
+        <dependency>
+            <groupId>io.github.yuku123</groupId>
+            <artifactId>z-report-common</artifactId>
+        </dependency>
+        <!-- 依赖方向: datasource → dataset (引擎类型 Table/FieldType); dataset 经 TableSourceResolver 倒置源解析 -->
+        <!-- TODO(M2): 接入 z-util-math 数值函数与 z-util-expr 表达式引擎
+             (待确认 Maven Central artifact 版本后打开, 接口已留切换缝) -->
+        <dependency>
+            <groupId>org.junit.jupiter</groupId>
+            <artifactId>junit-jupiter</artifactId>
+            <scope>test</scope>
+        </dependency>
+    </dependencies>
+</project>
