@@ -25,6 +25,20 @@
             <groupId>io.github.yuku123</groupId>
             <artifactId>z-report-common</artifactId>
         </dependency>
+        <dependency>
+            <groupId>io.github.yuku123</groupId>
+            <artifactId>z-util-cache</artifactId>
+            <!-- z-util-core 经此传递引入 log4j-slf4j2-impl (SLF4J 2.x 桥),
+                 与 spring-boot-starter-log4j2 提供的 log4j-slf4j-impl:2.17.2 (SLF4J 1.x 桥)
+                 在 slf4j-api:1.7.36 共存时导致 StaticLoggerBinder 反射初始化失败。
+                 项目运行栈以 log4j2 (via z-boot-web-starter) 为准, 排除 SLF4J 2.x 桥即可 -->
+            <exclusions>
+                <exclusion>
+                    <groupId>org.apache.logging.log4j</groupId>
+                    <artifactId>log4j-slf4j2-impl</artifactId>
+                </exclusion>
+            </exclusions>
+        </dependency>
         <!-- 依赖方向: datasource → dataset (引擎类型 Table/FieldType); dataset 经 TableSourceResolver 倒置源解析 -->
         <!-- TODO(M2): 接入 z-util-math 数值函数与 z-util-expr 表达式引擎
              (待确认 Maven Central artifact 版本后打开, 接口已留切换缝) -->

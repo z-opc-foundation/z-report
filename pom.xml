@@ -74,6 +74,12 @@
                 <artifactId>z-report-common</artifactId>
                 <version>${project.version}</version>
             </dependency>
+            <!-- z-util (BOM 不管, 显式版本) -->
+            <dependency>
+                <groupId>io.github.yuku123</groupId>
+                <artifactId>z-util-cache</artifactId>
+                <version>1.0.10</version>
+            </dependency>
             <dependency>
                 <groupId>io.github.yuku123</groupId>
                 <artifactId>z-report-datasource</artifactId>
