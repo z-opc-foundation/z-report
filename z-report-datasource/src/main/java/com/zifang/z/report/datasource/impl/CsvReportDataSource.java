@@ -1,5 +1,7 @@
 package com.zifang.z.report.datasource.impl;
 
+import com.zifang.util.parser.csv.CsvCharsetDetector;
+import com.zifang.util.parser.csv.CsvParser;
 import com.zifang.z.report.common.schema.DataSourceDef;
 import com.zifang.z.report.common.schema.DataSourceType;
 import com.zifang.z.report.common.schema.FieldType;
@@ -7,9 +9,7 @@ import com.zifang.z.report.dataset.engine.Table;
 import com.zifang.z.report.datasource.spi.ReportDataSource;
 
 import java.io.IOException;
-import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
-import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.util.ArrayList;
 import java.util.Collections;
@@ -26,7 +26,9 @@ import java.util.Objects;
  * - inline: 内嵌 CSV 文本 (演示/测试, 优先于 path)
  * - max-rows: 截断保护 (默认 100000)
  * <p>
- * 解析: RFC4180 简化实现 (逗号分隔, 双引号包裹, 引号内支持逗号/换行/"" 转义)。
+ * 解析: 走 z-util-parser-csv 1.0.10 的 CsvParser (RFC4180, 引号内换行/逗号/"" 转义);
+ * 路径读取经 CsvCharsetDetector.decode 探测编码 (UTF-8 BOM / UTF-8 / GB18030 兜底),
+ * 解决硬编码 UTF-8 误读 Excel 中文导出 CSV 的问题。空单元 → null + 类型升级推断仍由 z-report 自维护。
  */
 public class CsvReportDataSource implements ReportDataSource {
 
@@ -47,11 +49,12 @@ public class CsvReportDataSource implements ReportDataSource {
         if (csv == null || csv.isEmpty()) {
             String path = requireProp(p, "path");
             try {
-                csv = new String(Files.readAllBytes(Paths.get(path)), StandardCharsets.UTF_8);
+                String text = CsvCharsetDetector.decode(Files.readAllBytes(Paths.get(path)));
+                this.tableId = Paths.get(path).getFileName().toString().replaceAll("\\.csv$", "");
+                csv = text;
             } catch (IOException e) {
                 throw new IllegalArgumentException("cannot read csv file: " + path + " (" + e.getMessage() + ")", e);
             }
-            this.tableId = Paths.get(path).getFileName().toString().replaceAll("\\.csv$", "");
         } else {
             this.tableId = def.getId() == null ? "csv" : def.getId();
         }
@@ -98,40 +101,49 @@ public class CsvReportDataSource implements ReportDataSource {
         }
     }
 
-    // ==================== RFC4180 简化解析 ====================
+    // ==================== z-util-parser-csv 适配 + 类型升级推断 ====================
 
     private static Parsed parse(String csv, int maxRows) {
-        List<String> header = null;
-        List<List<Object>> rows = new ArrayList<>();
+        CsvParser parser = CsvParser.builder()
+                .delimiter(',')
+                .firstLineAsHeader(true)
+                .skipEmptyLines(false)
+                .trimFields(false)
+                .build();
+        CsvParser.ParseResult result = parser.parseWithHeader(csv);
+        String[] headerArr = result.getHeaders();
+        List<String[]> data = result.getData();
+        if (headerArr == null || headerArr.length == 0) {
+            throw new IllegalArgumentException("empty csv (no header)");
+        }
+        List<String> header = new ArrayList<>(headerArr.length);
+        for (String h : headerArr) {
+            header.add(h == null ? "" : h);
+        }
         LinkedHashMap<String, FieldType> cols = new LinkedHashMap<>();
-        for (List<String> record : new RecordScanner(csv)) {
-            if (header == null) {
-                header = record;
-                for (String h : header) {
-                    cols.put(h, FieldType.STRING);
-                }
-                continue;
-            }
+        for (String h : header) {
+            cols.put(h, FieldType.STRING);
+        }
+        List<List<Object>> rows = new ArrayList<>();
+        for (String[] record : data) {
             if (rows.size() >= maxRows) {
                 break;
             }
             List<Object> row = new ArrayList<>(header.size());
             for (int i = 0; i < header.size(); i++) {
-                Object v = i < record.size() ? ValueInference.parse(record.get(i)) : null;
-                row.add(v);
-                // 类型升级: 后续行遇到更宽类型时提升 (STRING→INT/BOOL, INT→DOUBLE)
-                if (v != null) {
+                String raw = i < record.length ? record[i] : null;
+                String v = raw == null ? null : (raw.isEmpty() ? null : raw);
+                Object parsed = ValueInference.parse(v);
+                row.add(parsed);
+                if (parsed != null) {
                     FieldType cur = cols.get(header.get(i));
-                    FieldType inf = ValueInference.infer(v);
+                    FieldType inf = ValueInference.infer(parsed);
                     if (shouldUpgrade(cur, inf)) {
                         cols.put(header.get(i), inf);
                     }
                 }
             }
             rows.add(row);
-        }
-        if (header == null) {
-            throw new IllegalArgumentException("empty csv (no header)");
         }
         return new Parsed(cols, rows);
     }
@@ -151,94 +163,6 @@ public class CsvReportDataSource implements ReportDataSource {
         Parsed(LinkedHashMap<String, FieldType> colTypes, List<List<Object>> rows) {
             this.colTypes = colTypes;
             this.rows = rows;
-        }
-    }
-
-    /** 逐记录扫描: 处理引号内逗号/换行/"" 转义 */
-    private static final class RecordScanner implements Iterable<List<String>> {
-        private final String csv;
-
-        RecordScanner(String csv) {
-            this.csv = csv;
-        }
-
-        @Override
-        public java.util.Iterator<List<String>> iterator() {
-            return new java.util.Iterator<List<String>>() {
-                private int pos = 0;
-                private List<String> next = scanNext();
-
-                private List<String> scanNext() {
-                    if (pos >= csv.length()) {
-                        return null;
-                    }
-                    List<String> record = new ArrayList<>();
-                    StringBuilder field = new StringBuilder();
-                    boolean inQuotes = false;
-                    boolean fieldStarted = false;
-                    while (pos < csv.length()) {
-                        char c = csv.charAt(pos);
-                        if (inQuotes) {
-                            if (c == '"') {
-                                if (pos + 1 < csv.length() && csv.charAt(pos + 1) == '"') {
-                                    field.append('"');
-                                    pos += 2;
-                                    continue;
-                                }
-                                inQuotes = false;
-                                pos++;
-                                continue;
-                            }
-                            field.append(c);
-                            pos++;
-                            continue;
-                        }
-                        switch (c) {
-                            case '"':
-                                inQuotes = true;
-                                fieldStarted = true;
-                                pos++;
-                                continue;
-                            case ',':
-                                record.add(fieldStarted ? field.toString() : trimOrNull(field));
-                                field.setLength(0);
-                                fieldStarted = false;
-                                pos++;
-                                continue;
-                            case '\r':
-                                pos++;
-                                continue;
-                            case '\n':
-                                pos++;
-                                record.add(fieldStarted ? field.toString() : trimOrNull(field));
-                                return record;
-                            default:
-                                field.append(c);
-                                fieldStarted = true;
-                                pos++;
-                        }
-                    }
-                    record.add(fieldStarted ? field.toString() : trimOrNull(field));
-                    return record;
-                }
-
-                private String trimOrNull(StringBuilder sb) {
-                    String s = sb.toString().trim();
-                    return s.isEmpty() ? null : s;
-                }
-
-                @Override
-                public boolean hasNext() {
-                    return next != null;
-                }
-
-                @Override
-                public List<String> next() {
-                    List<String> cur = next;
-                    next = scanNext();
-                    return cur;
-                }
-            };
         }
     }
 }

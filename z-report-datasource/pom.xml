@@ -27,6 +27,10 @@
             <groupId>io.github.yuku123</groupId>
             <artifactId>z-report-dataset</artifactId>
         </dependency>
+        <dependency>
+            <groupId>io.github.yuku123</groupId>
+            <artifactId>z-util-parser-csv</artifactId>
+        </dependency>
         <!-- JDBC 源: Druid 连接池 + mysql-connector-j, 版本由 BOM 锁定 (对齐 z-boot) -->
         <dependency>
             <groupId>com.alibaba</groupId>
