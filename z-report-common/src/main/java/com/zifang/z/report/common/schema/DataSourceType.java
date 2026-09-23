@@ -7,5 +7,7 @@ public enum DataSourceType {
     MEMORY,
     JDBC,
     CSV,
-    HTTP
+    HTTP,
+    /** 内存 SQL 源: 把其它源的表搬进内存后, 数据单元是一条 join/聚合 SELECT */
+    SQL
 }

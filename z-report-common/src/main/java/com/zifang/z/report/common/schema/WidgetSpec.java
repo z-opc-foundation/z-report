@@ -16,6 +16,13 @@ public class WidgetSpec {
     /** 度量聚合方式, 默认 SUM */
     private AggType agg;
     private List<WidgetFilter> filters;
+    /**
+     * 对象整形程序 (z-util-expr-obj 的 JSON 形状 spec): 把数据集的二维结果抬成任意高维结构。
+     * <p>
+     * 挂在部件上而不是数据集上: 数据集是二维的、可被多个部件共享与缓存, 而饼图要的扁平结构与
+     * 树图要的嵌套结构是各部件自己的事。type=RAW 时产出即 {@code {type:'raw', value: <任意结构>}}。
+     */
+    private Object shape;
 
     public WidgetSpec() {
     }
@@ -74,5 +81,13 @@ public class WidgetSpec {
 
     public void setFilters(List<WidgetFilter> filters) {
         this.filters = filters;
+    }
+
+    public Object getShape() {
+        return shape;
+    }
+
+    public void setShape(Object shape) {
+        this.shape = shape;
     }
 }

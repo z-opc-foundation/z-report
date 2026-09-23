@@ -1,5 +1,6 @@
 package com.zifang.z.report.web;
 
+import com.zifang.util.expr.obj.ObjException;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.ExceptionHandler;
@@ -9,13 +10,14 @@ import java.util.LinkedHashMap;
 import java.util.Map;
 
 /**
- * 统一错误出口: 契约校验/资源缺失 → 400, 其余 → 500。
+ * 统一错误出口: 契约校验/资源缺失/整形程序写错 → 400, 其余 → 500。
  */
 @RestControllerAdvice
 public class ApiErrorAdvice {
 
-    @ExceptionHandler(IllegalArgumentException.class)
-    public ResponseEntity<Map<String, Object>> badRequest(IllegalArgumentException e) {
+    // ObjException 是调用方传来的 shape 程序不合法, 属于请求问题, 不该记成服务端错误
+    @ExceptionHandler({IllegalArgumentException.class, ObjException.class})
+    public ResponseEntity<Map<String, Object>> badRequest(RuntimeException e) {
         return body(HttpStatus.BAD_REQUEST, e.getMessage());
     }
 

@@ -12,6 +12,7 @@ import com.zifang.z.report.render.impl.BarOptionBuilder;
 import com.zifang.z.report.render.impl.KpiOptionBuilder;
 import com.zifang.z.report.render.impl.LineOptionBuilder;
 import com.zifang.z.report.render.impl.PieOptionBuilder;
+import com.zifang.z.report.render.impl.RawOptionBuilder;
 import com.zifang.z.report.render.impl.TableOptionBuilder;
 
 import java.util.EnumMap;
@@ -21,7 +22,8 @@ import java.util.Map;
 /**
  * 渲染服务: QueryResult (明细) → 聚合/组织 → echarts option (或渲染器约定结构)。
  * <p>
- * builder 按 ChartType 注册, M1 内置五件套; 扩展图表新增 builder 即可。
+ * builder 按 ChartType 注册, M1 内置五件套 + RAW (对象整形语言产出的任意结构);
+ * 扩展图表新增 builder 即可。
  */
 public class EChartsRenderService {
 
@@ -34,6 +36,7 @@ public class EChartsRenderService {
         register(new PieOptionBuilder());
         register(new TableOptionBuilder());
         register(new KpiOptionBuilder());
+        register(new RawOptionBuilder());
     }
 
     public void register(ChartOptionBuilder builder) {

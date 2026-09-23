@@ -37,10 +37,21 @@
             <groupId>io.github.yuku123</groupId>
             <artifactId>z-boot-datasource-starter</artifactId>
         </dependency>
+        <!-- 数据源注册/方言/动态查询 (JdbcReportDataSource) + 内存 SQL 引擎 (InMemoryReportDataSource) -->
+        <dependency>
+            <groupId>io.github.yuku123</groupId>
+            <artifactId>z-util-jdbc</artifactId>
+        </dependency>
         <!-- TODO(M1.5+): z-util-parser (HTTP 源) -->
         <dependency>
             <groupId>org.junit.jupiter</groupId>
             <artifactId>junit-jupiter</artifactId>
+            <scope>test</scope>
+        </dependency>
+        <!-- JDBC 源的可重复测试: H2 内存库, 不需要外部实例 -->
+        <dependency>
+            <groupId>com.h2database</groupId>
+            <artifactId>h2</artifactId>
             <scope>test</scope>
         </dependency>
     </dependencies>

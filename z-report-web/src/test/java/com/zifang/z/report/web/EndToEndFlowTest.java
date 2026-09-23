@@ -15,13 +15,14 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
 
 /**
  * M1 端到端链路验证 (不启动真实端口):
- * 注册内存数据源 → 注册数据集(含过滤) → 注册视图 → 整页渲染 → Book 编排发布。
+ * 注册内存数据源 → 注册数据集(含过滤) → 注册视图 → 整页渲染 → Book 编排发布 → 内存 SQL 源跨源 join
+ * → RAW 部件用对象整形程序产出任意结构。
  */
 @SpringBootTest(classes = EndToEndFlowTest.TestApp.class)
 @AutoConfigureMockMvc
 class EndToEndFlowTest {
 
-    // 排除 Spring/Druid 数据源自动配置: z-report 的 JDBC 源为自管理 Druid (z-boot 约定),
+    // 排除 Spring/Druid 数据源自动配置: JDBC 源的池由 z-util-jdbc DataSourceRegistry 自建自管,
     // classpath 上有 druid+mysql 时不应激活任何容器级数据源
     @SpringBootApplication(scanBasePackages = "com.zifang.z.report",
             exclude = {org.springframework.boot.autoconfigure.jdbc.DataSourceAutoConfiguration.class,
@@ -97,6 +98,68 @@ class EndToEndFlowTest {
                 .andExpect(jsonPath("$.bookId").value(bookId))
                 // nodes[0] 是建书时自动生成的根 FOLDER (viewId=null), PAGE 节点在 nodes[1]
                 .andExpect(jsonPath("$.nodes[1].viewId").value("view1"));
+
+        // 8. 内存 SQL 源: 把已注册源的表搬进内存, 数据单元就是一条跨源 join/聚合 SELECT
+        mvc.perform(post("/api/datasource/memory").contentType("application/json")
+                        .content("{\"def\":{\"id\":\"ds2\",\"name\":\"城市字典\",\"type\":\"MEMORY\"},"
+                                + "\"tables\":{\"cities\":["
+                                + "{\"city\":\"hangzhou\",\"region\":\"华东\"},"
+                                + "{\"city\":\"shanghai\",\"region\":\"华南\"}]}}"))
+                .andExpect(status().isOk());
+
+        mvc.perform(post("/api/datasource/memory-sql").contentType("application/json")
+                        .content("{\"def\":{\"id\":\"ds3\",\"name\":\"区域汇总\"},"
+                                + "\"baseTables\":{\"ds1\":[\"orders\"],\"ds2\":[\"cities\"]},"
+                                + "\"sqls\":{\"by_region\":\"SELECT c.region AS region, SUM(o.amount) AS total"
+                                + " FROM orders o INNER JOIN cities c ON o.city = c.city GROUP BY c.region\"}}"))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.ok").value(true));
+
+        mvc.perform(post("/api/dataset").contentType("application/json")
+                        .content("{\"id\":\"ds-region\",\"name\":\"区域销售额\",\"sourceId\":\"ds3\","
+                                + "\"baseTable\":\"by_region\"}"))
+                .andExpect(status().isOk());
+
+        // expr-sql 的 SUM 产出 BigDecimal, 推断类型必须落到 DOUBLE 而不是 INT
+        mvc.perform(post("/api/dataset/ds-region/preview"))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.total").value(2))
+                .andExpect(jsonPath("$.columns[1].name").value("total"))
+                .andExpect(jsonPath("$.columns[1].type").value("DOUBLE"));
+
+        // 跨源结果照常进渲染链路
+        mvc.perform(post("/api/render/widget").contentType("application/json")
+                        .content("{\"id\":\"w2\",\"type\":\"BAR\",\"title\":\"区域销售额\","
+                                + "\"datasetId\":\"ds-region\","
+                                + "\"encode\":{\"x\":\"region\",\"y\":\"total\"},\"agg\":\"SUM\"}"))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$._widgetType").value("BAR"))
+                .andExpect(jsonPath("$.xAxis.length()").value(2));
+
+        // 9. RAW 部件: 请求体里的对象整形程序把二维结果抬成高维结构, 渲染层原样透传
+        mvc.perform(post("/api/render/widget").contentType("application/json")
+                        .content("{\"id\":\"w3\",\"type\":\"RAW\",\"title\":\"城市明细结构\","
+                                + "\"datasetId\":\"ds-order\",\"shape\":["
+                                + "{\"op\":\"group\",\"by\":\"city\",\"items\":\"lines\","
+                                + "\"agg\":{\"total\":\"SUM(amount)\",\"n\":\"COUNT(*)\"},"
+                                + "\"into\":{\"city\":\"${city}\",\"total\":\"${total}\",\"n\":\"${n}\","
+                                + "\"lines\":{\"op\":\"map\",\"of\":\"lines\",\"into\":{\"amount\":\"${amount}\"}}}},"
+                                + "{\"op\":\"keyBy\",\"key\":\"city\"}]}"))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$._widgetType").value("RAW"))
+                .andExpect(jsonPath("$.type").value("raw"))
+                .andExpect(jsonPath("$.value.hangzhou.total").value(150))
+                .andExpect(jsonPath("$.value.hangzhou.n").value(2))
+                .andExpect(jsonPath("$.value.hangzhou.lines.length()").value(2))
+                .andExpect(jsonPath("$.value.hangzhou.lines[0].amount").value(100))
+                .andExpect(jsonPath("$.value.shanghai.total").value(200));
+
+        // 整形程序写错要当场报错, 不能静默出一张空图
+        mvc.perform(post("/api/render/widget").contentType("application/json")
+                        .content("{\"id\":\"w4\",\"type\":\"RAW\",\"datasetId\":\"ds-order\",\"shape\":["
+                                + "{\"op\":\"sort\",\"by\":\"amount\"}]}"))
+                .andExpect(status().isBadRequest())
+                .andExpect(jsonPath("$.error").value(org.hamcrest.Matchers.containsString("对象语言可用步骤")));
     }
 
     private String readField(String json, String field) {

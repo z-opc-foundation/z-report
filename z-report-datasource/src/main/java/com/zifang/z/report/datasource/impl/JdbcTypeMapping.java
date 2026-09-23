@@ -1,5 +1,6 @@
 package com.zifang.z.report.datasource.impl;
 
+import com.zifang.util.db.dialect.SqlType;
 import com.zifang.z.report.common.schema.FieldType;
 
 import java.math.BigDecimal;
@@ -8,7 +9,10 @@ import java.sql.Timestamp;
 import java.time.LocalDate;
 
 /**
- * JDBC 元数据 → 引擎 FieldType 映射 + 行值归一化。
+ * z-util-jdbc 归一类型 → 引擎 FieldType，以及行值归一化。
+ * <p>
+ * 引擎只认 5 种列类型，比 JDBC 类型粗：TIMESTAMP/TIME/BINARY/OTHER 一律按字符串呈现，
+ * DECIMAL 与浮点同为 DOUBLE（数值化由引擎按 Number 处理）。
  * <p>
  * 归一化约定 (引擎 Table 宽松存取的值域):
  * - 整型 → Long; 浮点/DECIMAL → 原样 (BigDecimal/Double, 引擎按 Number 数值化)
@@ -21,26 +25,19 @@ final class JdbcTypeMapping {
     private JdbcTypeMapping() {
     }
 
-    static FieldType toFieldType(int sqlType, String typeName) {
+    static FieldType toFieldType(SqlType sqlType) {
         switch (sqlType) {
-            case java.sql.Types.INTEGER:
-            case java.sql.Types.BIGINT:
-            case java.sql.Types.SMALLINT:
-            case java.sql.Types.TINYINT:
+            case INTEGER:
+            case LONG:
                 return FieldType.INT;
-            case java.sql.Types.DECIMAL:
-            case java.sql.Types.NUMERIC:
-            case java.sql.Types.FLOAT:
-            case java.sql.Types.REAL:
-            case java.sql.Types.DOUBLE:
+            case DOUBLE:
+            case DECIMAL:
                 return FieldType.DOUBLE;
-            case java.sql.Types.BOOLEAN:
-            case java.sql.Types.BIT:
+            case BOOLEAN:
                 return FieldType.BOOL;
-            case java.sql.Types.DATE:
+            case DATE:
                 return FieldType.DATE;
             default:
-                // VARCHAR/CHAR/TEXT/DATETIME/TIMESTAMP/TIME/JSON/ENUM... 一律 STRING
                 return FieldType.STRING;
         }
     }
@@ -72,13 +69,5 @@ final class JdbcTypeMapping {
             return v.toString();
         }
         return v;
-    }
-
-    /** 标识符白名单: 表名/schema.table (防注入第二道防线, 第一道是只读 SELECT) */
-    static boolean isSafeIdentifier(String name) {
-        if (name == null || name.isEmpty() || name.length() > 128) {
-            return false;
-        }
-        return name.matches("[A-Za-z0-9_]+(\\.[A-Za-z0-9_]+)?");
     }
 }

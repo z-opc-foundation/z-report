@@ -1,6 +1,8 @@
 package com.zifang.z.report.datasource.spi;
 
 import com.zifang.z.report.common.schema.DataSourceDef;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
@@ -10,14 +12,28 @@ import java.util.concurrent.ConcurrentHashMap;
  */
 public class DataSourceRegistry {
 
+    private static final Logger log = LoggerFactory.getLogger(DataSourceRegistry.class);
+
     private final Map<String, ReportDataSource> sources = new ConcurrentHashMap<>();
 
+    /** 注册源; 同 id 覆盖时关闭被替换的源, 否则连接池会随每次重复注册泄漏一个 */
     public void register(ReportDataSource source) {
         DataSourceDef def = source.def();
         if (def == null || def.getId() == null) {
             throw new IllegalArgumentException("dataSource def/id required");
         }
-        sources.put(def.getId(), source);
+        closeQuietly(sources.put(def.getId(), source));
+    }
+
+    private static void closeQuietly(ReportDataSource source) {
+        if (!(source instanceof AutoCloseable)) {
+            return;
+        }
+        try {
+            ((AutoCloseable) source).close();
+        } catch (Exception e) {
+            log.warn("关闭被替换的数据源 [{}] 失败: {}", source.def().getId(), e.getMessage());
+        }
     }
 
     public ReportDataSource get(String id) {

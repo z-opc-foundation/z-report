@@ -14,6 +14,7 @@ import java.util.LinkedHashMap;
 import java.util.Map;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertThrows;
 
 class EChartsRenderServiceTest {
 
@@ -79,5 +80,41 @@ class EChartsRenderServiceTest {
         assertEquals("kpi", option.path("type").asText());
         assertEquals(350, option.path("value").asInt());
         assertEquals("t", option.path("label").asText());
+    }
+
+    @Test
+    void rawWidgetEmitsWhateverTheShapeProgramProduces() {
+        WidgetSpec w = new WidgetSpec();
+        w.setId("w-raw");
+        w.setType(ChartType.RAW);
+        w.setShape(Arrays.asList(
+                map("op", "group", "by", "city", "items", "lines",
+                        "agg", map("total", "SUM(amount)"),
+                        "into", map("city", "${city}", "total", "${total}",
+                                "lines", map("op", "map", "of", "lines",
+                                        "into", map("amount", "${amount}")))),
+                map("op", "keyBy", "key", "city")));
+        JsonNode option = mapper.valueToTree(service.render(w, data()));
+        assertEquals("raw", option.path("type").asText());
+        JsonNode hangzhou = option.path("value").path("hangzhou");
+        assertEquals(150, hangzhou.path("total").asInt());
+        assertEquals(2, hangzhou.path("lines").size());
+        assertEquals(100, hangzhou.path("lines").get(0).path("amount").asInt());
+    }
+
+    @Test
+    void rawWidgetWithoutShapeFailsInsteadOfRenderingEmpty() {
+        WidgetSpec w = new WidgetSpec();
+        w.setId("w-raw-bad");
+        w.setType(ChartType.RAW);
+        assertThrows(IllegalArgumentException.class, () -> service.render(w, data()));
+    }
+
+    private Map<String, Object> map(Object... kv) {
+        LinkedHashMap<String, Object> m = new LinkedHashMap<>();
+        for (int i = 0; i < kv.length; i += 2) {
+            m.put((String) kv[i], kv[i + 1]);
+        }
+        return m;
     }
 }

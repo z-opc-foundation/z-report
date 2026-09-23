@@ -66,11 +66,9 @@ class JdbcDataSourceTest {
     @Test
     void unsafeIdentifier_rejected() {
         try (JdbcReportDataSource src = source()) {
-            assertTrue(JdbcTypeMapping.isSafeIdentifier("t_user"));
-            assertTrue(JdbcTypeMapping.isSafeIdentifier("oc.t_user"));
-            assertFalse(JdbcTypeMapping.isSafeIdentifier("t_user; DROP TABLE x"));
-            assertFalse(JdbcTypeMapping.isSafeIdentifier("t_user`"));
+            // 标识符白名单在 z-util-jdbc (Identifiers), 非法名在任何 SQL 拼出之前就被拒
             assertThrows(IllegalArgumentException.class, () -> src.read("t; drop table x"));
+            assertThrows(IllegalArgumentException.class, () -> src.schema("t_user`"));
         }
     }
 }

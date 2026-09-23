@@ -15,7 +15,8 @@ z-report-local/
 ├── pom.xml                        # 根 POM: io.github.yuku123:z-report:1.0.0-SNAPSHOT
 │                                  # 独立自持 (决策④), 双 BOM: spring-boot 2.7.18 + z-boot-dependencies 1.0.2
 ├── z-report-common/               # 契约层: FieldType/DatasetSchema/ViewSchema/WidgetSpec/BookNodeDef/QueryResult
-├── z-report-datasource/           # 数据源 SPI: ReportDataSource / DataSourceRegistry / MemoryDataSource
+├── z-report-datasource/           # 数据源 SPI: ReportDataSource / DataSourceRegistry / JDBC·CSV·内存·内存SQL 四类源
+│                                  # (连接池/方言/动态查询复用 z-util-jdbc)
 ├── z-report-dataset/              # ★ 引擎: typed 列式 Table (多键 hash join / groupby / 表达式 / 过滤)
 ├── z-report-render/               # 渲染: ChartOptionBuilder SPI ×5 (LINE/BAR/PIE/TABLE/KPI) → echarts option
 ├── z-report-book/                 # Book 树状组织 + 整体发布不可变快照 (M1 内存态)
@@ -46,7 +47,8 @@ z-report-local/
 ## M1.5 已交付 (2026-09-22, 已全量测试通过)
 
 - [x] `z-report-datasource`: JdbcReportDataSource (Druid + mysql-connector-j, 对齐
-      z-boot `z.base.db.{module}.*` 配置约定与连接保活策略), CsvReportDataSource (RFC4180
+      z-boot `z.base.db.{module}.*` 配置约定与连接保活策略; M1.6 起改走 z-util-jdbc, 见下),
+      CsvReportDataSource (RFC4180
       简化解析 + 类型升级推断); SPI 增加 `tables()` 元数据探测; REST: `/api/datasource/{jdbc,csv}`, `/{id}/tables`
 - [ ] `z-report-dataset`: 表达式字符串解析接 z-util-expr (**白名单受限求值, 禁止动态执行**);
       转换 DAG 编排接 z-util-workflow; 结果缓存 (z-util-cache)
@@ -66,12 +68,30 @@ z-report-local/
 > M2 遗留未做: z-util-workflow 转换 DAG 编排; 结果缓存分布式化 (现为单机内存 TTL)。
 > 详细坑清单与接手导览: `_doc/002_失败要点与坑.md`。
 
-## 测试 (mvn test, 51 个全绿; 带 JDBC 凭证 54 全绿)
+## M1.6 已交付 (2026-09-23, 数据源能力下沉 z-util-jdbc)
 
-- 引擎/渲染/端到端单测随构建执行; JDBC 真实库集成测试 (JdbcDataSourceTest) 由环境变量
+- [x] 数据源/方言/动态查询不再自研: `z-report-datasource` 依赖 `z-util-jdbc`,
+      `JdbcReportDataSource` 改为 `DataSourceRegistry` (注册即探活) + `DynamicQuery` + `Dialects`,
+      MySQL / PostgreSQL / H2 一套代码通吃 (原来只有 MySQL)
+- [x] 属性 `url` 直连 (整条 `jdbcUrl` 优先于 `host`/`port`/`database` 拼装), `dialect` 选方言,
+      `max-rows` 控单次进内存的行量级; 元数据探测走 JDBC `DatabaseMetaData`, 表清单含视图,
+      列类型按 `SqlType` 归一到 `FieldType` (不再靠 MySQL 元数据 + 手写标识符白名单)
+- [x] `InMemoryReportDataSource` + `DataSourceType.SQL`: 把任意已注册源 (JDBC/CSV/内存) 的表
+      搬进 `z-util-expr-sql` 内存引擎, 数据单元就是一条跨源 join/group by/聚合 SELECT;
+      REST `POST /api/datasource/memory-sql` (`baseTables` 声明取哪些源哪些表, `sqls` 声明数据单元)
+- [x] 基表每次取数现读, 不需重注册; 源换绑/注销时旧池显式关闭 (注册表 put 即 close 旧实例)
+- [x] 端到端新增: 跨源 SQL 源 → 数据集 → 预览 → widget 渲染 (`EndToEndFlowTest`)
+- 注意: z-util 系 jar 传递的 `log4j-slf4j2-impl` (SLF4J 2.x 桥) 与 z-boot 的
+  `log4j-slf4j-impl:2.17.2` (SLF4J 1.x 桥) 不能共存, 根 POM 对 z-util 依赖统一排掉前者
+
+## 测试 (mvn test, 62 个全绿; 真实 MySQL 集成测试 3 个由环境变量门控)
+
+- 引擎/渲染/端到端单测随构建执行; JDBC 链路默认由 H2 内存库覆盖 (`JdbcH2DataSourceTest`,
+  无需外部实例); 真实库集成测试 (JdbcDataSourceTest) 由环境变量
   `ZREPORT_IT_DB_HOST/PORT/NAME/USER/PASSWORD` 门控, 设置后连真实 MySQL 执行
   (CI 无凭证自动跳过, 凭证不落代码库)
 - z-boot 对齐版本: `z-boot.version=1.0.11` (BOM + 自家 starter, Java 8 / Spring Boot 2.7.12 基线)
+- z-util 对齐版本: `z-util.version=1.0.12` (z-util-jdbc / z-util-cache / z-util-parser-csv 统一由根 POM 管)
 
 ## 并入正式仓的建议路径
 

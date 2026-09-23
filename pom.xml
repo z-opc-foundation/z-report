@@ -37,6 +37,7 @@
         <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
         <spring-boot.version>2.7.18</spring-boot.version>
         <z-boot.version>1.0.11</z-boot.version>
+        <z-util.version>1.0.12</z-util.version>
     </properties>
 
     <dependencyManagement>
@@ -74,16 +75,35 @@
                 <artifactId>z-report-common</artifactId>
                 <version>${project.version}</version>
             </dependency>
-            <!-- z-util (BOM 不管, 显式版本) -->
+            <!-- z-util (BOM 不管, 版本统一在 z-util.version) -->
             <dependency>
                 <groupId>io.github.yuku123</groupId>
                 <artifactId>z-util-cache</artifactId>
-                <version>1.0.10</version>
+                <version>${z-util.version}</version>
             </dependency>
             <dependency>
                 <groupId>io.github.yuku123</groupId>
                 <artifactId>z-util-parser-csv</artifactId>
-                <version>1.0.10</version>
+                <version>${z-util.version}</version>
+            </dependency>
+            <!-- 数据源注册/方言/动态查询/内存 SQL 引擎 -->
+            <dependency>
+                <groupId>io.github.yuku123</groupId>
+                <artifactId>z-util-jdbc</artifactId>
+                <version>${z-util.version}</version>
+                <!-- 同 z-util-cache: 排掉 z-util-core 传递的 SLF4J 2.x 桥, 运行栈统一用 z-boot-web-starter 的 log4j2 -->
+                <exclusions>
+                    <exclusion>
+                        <groupId>org.apache.logging.log4j</groupId>
+                        <artifactId>log4j-slf4j2-impl</artifactId>
+                    </exclusion>
+                </exclusions>
+            </dependency>
+            <!-- 对象整形语言: 二维结果 → 任意高维结构 (RAW 部件); 零传递依赖 -->
+            <dependency>
+                <groupId>io.github.yuku123</groupId>
+                <artifactId>z-util-expr-obj</artifactId>
+                <version>${z-util.version}</version>
             </dependency>
             <dependency>
                 <groupId>io.github.yuku123</groupId>

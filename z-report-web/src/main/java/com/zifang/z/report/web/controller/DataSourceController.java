@@ -3,6 +3,7 @@ package com.zifang.z.report.web.controller;
 import com.zifang.z.report.common.schema.DataSourceDef;
 import com.zifang.z.report.common.schema.DataSourceType;
 import com.zifang.z.report.datasource.impl.CsvReportDataSource;
+import com.zifang.z.report.datasource.impl.InMemoryReportDataSource;
 import com.zifang.z.report.datasource.impl.JdbcReportDataSource;
 import com.zifang.z.report.datasource.impl.MemoryDataSource;
 import com.zifang.z.report.datasource.spi.DataSourceRegistry;
@@ -81,6 +82,64 @@ public class DataSourceController {
     @PostMapping("/csv")
     public Map<String, Object> registerCsv(@RequestBody DataSourceDef def) {
         registry.register(new CsvReportDataSource(def));
+        return ok(def.getId());
+    }
+
+    /** 内存 SQL 源注册请求体 */
+    public static class MemorySqlRequest {
+        private DataSourceDef def;
+        /** 源 id → 要搬进内存的基表 */
+        private Map<String, List<String>> baseTables;
+        /** 数据单元 → SELECT */
+        private Map<String, String> sqls;
+        private Map<String, Map<String, FieldType>> colTypes;
+
+        public DataSourceDef getDef() {
+            return def;
+        }
+
+        public void setDef(DataSourceDef def) {
+            this.def = def;
+        }
+
+        public Map<String, List<String>> getBaseTables() {
+            return baseTables;
+        }
+
+        public void setBaseTables(Map<String, List<String>> baseTables) {
+            this.baseTables = baseTables;
+        }
+
+        public Map<String, String> getSqls() {
+            return sqls;
+        }
+
+        public void setSqls(Map<String, String> sqls) {
+            this.sqls = sqls;
+        }
+
+        public Map<String, Map<String, FieldType>> getColTypes() {
+            return colTypes;
+        }
+
+        public void setColTypes(Map<String, Map<String, FieldType>> colTypes) {
+            this.colTypes = colTypes;
+        }
+    }
+
+    /**
+     * 内存 SQL 源: 基表来自已注册源 (JDBC/CSV/内存均可), 数据单元是一条跨源 join/聚合的 SELECT。
+     * 基表必须先注册, 之后每次取数现读, 不需要重注册。
+     */
+    @PostMapping("/memory-sql")
+    public Map<String, Object> registerMemorySql(@RequestBody MemorySqlRequest req) {
+        DataSourceDef def = req.getDef();
+        if (def == null) {
+            throw new IllegalArgumentException("def required");
+        }
+        def.setType(DataSourceType.SQL);
+        registry.register(new InMemoryReportDataSource(def, req.getBaseTables(), req.getSqls(),
+                req.getColTypes(), registry));
         return ok(def.getId());
     }
 
