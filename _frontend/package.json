@@ -10,6 +10,7 @@
     "preview": "vite preview"
   },
   "dependencies": {
+    "@yuku123/render": "^1.0.0",
     "antd": "^6.3.3",
     "echarts": "^5.5.1",
     "react": "^19.2.0",

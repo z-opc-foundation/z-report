@@ -1,7 +1,7 @@
 import { useEffect, useState } from 'react'
 import { useParams, useSearchParams } from 'react-router-dom'
 import { renderView, publishBook } from '../api/client.js'
-import UniversalRenderer from '../renderer/UniversalRenderer.jsx'
+import UniversalRenderer from '@yuku123/render'
 
 /**
  * 视图渲染页 (消费 /api/render/view/{id})。

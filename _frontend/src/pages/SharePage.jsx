@@ -1,7 +1,7 @@
 import { useEffect, useState } from 'react'
 import { useParams, useSearchParams } from 'react-router-dom'
 import { getPublication, renderView } from '../api/client.js'
-import UniversalRenderer from '../renderer/UniversalRenderer.jsx'
+import UniversalRenderer from '@yuku123/render'
 
 /**
  * 观看页 (匿名分享入口): /share/{publishId}?token=xxx
