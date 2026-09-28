@@ -4,6 +4,10 @@ target/
 build/
 out/
 dependency-reduced-pom.xml
+# flatten-maven-plugin 常开（继承 z-boot-parent 后发布形状靠它保）：每次本地构建在根和各模块
+# 目录留下展平后的 pom
+*.flattened-pom.xml
+.flattened-pom.xml
 *.class
 replay_pid*
 

@@ -28,10 +28,11 @@
 
     <build>
         <plugins>
+            <!-- 版本不写：z-boot-parent 的 pluginManagement 供 spring-boot-maven-plugin
+                 ${spring-boot.version}=2.7.18，与本仓迁移前那格逐字节相同（键已删，见仓根 properties）。 -->
             <plugin>
                 <groupId>org.springframework.boot</groupId>
                 <artifactId>spring-boot-maven-plugin</artifactId>
-                <version>${spring-boot.version}</version>
                 <executions>
                     <execution>
                         <goals>
