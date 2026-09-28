@@ -37,7 +37,7 @@
         <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
         <spring-boot.version>2.7.18</spring-boot.version>
         <z-boot.version>1.0.17</z-boot.version>
-        <z-util.version>1.0.12</z-util.version>
+        <z-util.version>1.0.13</z-util.version>
     </properties>
 
     <dependencyManagement>
