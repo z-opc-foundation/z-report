@@ -17,7 +17,7 @@
     <parent>
         <groupId>io.github.yuku123</groupId>
         <artifactId>z-boot-parent</artifactId>
-        <version>1.0.19</version>
+        <version>1.0.21</version>
         <relativePath/>
     </parent>
 
@@ -54,15 +54,16 @@
              maven.compiler.source/target=1.8 与 project.build.sourceEncoding=UTF-8 由父链供
              （父链那侧写的是 "8"，javac 里 8 与 1.8 同义）。java.version 在本仓 0 个引用点
              （compiler 的 <source>/<target> 这次整块删了，见下面 build 那段），所以删键不会悬空。
-             留着的两格都是**刻意与父链不同值**（删掉就是悄悄换实现），且必须同时写成**直接**
+             留着的一格是**刻意与父链不同值**（删掉就是悄悄换实现），且必须同时写成**直接**
              <dependencyManagement> 条目 —— `import` 进来的 BOM 顶不过从 parent 继承来的直接 DM
              （z-cache 试点实测：只留 log4j-bom 那条 import，4 件 log4j 仍漂到地板的 2.25.4）。 -->
 
-        <!-- z-boot 自家 starter：本仓 1.0.17，parent 那侧 z-boot.version=1.0.19。
-             抬 z-boot 会连带换 z-boot-web-starter 里的 knife4j / springdoc / swagger 那一族
-             （现读基线 tree 里挂着 10 支），那是一次功能升级、不属于"换构建模型"这一刀
-             ⇒ 先按 1.0.17 钉住，抬号单独判。 -->
-        <z-boot.version>1.0.17</z-boot.version>
+        <!-- 2026-09-29 消费者轮：`<z-boot.version>1.0.17</z-boot.version>` 连同下面两条直接 DM 条目
+             （z-boot-web-starter / z-boot-datasource-starter）**一并删除**，值由 <parent> z-boot-parent:1.0.21
+             的直接条目供。当年钉 1.0.17 的理由是"抬 z-boot 会连带换 knife4j / springdoc / swagger 那一族，
+             那是功能升级、不属于换构建模型这一刀 ⇒ 抬号单独判"—— 现在这一判已经下了：
+             地板 1.0.20 删掉了 simpleclient=0.8.1 那格、8 个聚合件不再转 log4j-slf4j2-impl，
+             留在 1.0.17 就是让本仓继续吃这两条老面值。knife4j 那一族的实际落点由净室 tree 复核。 -->
 
         <!-- log4j2 2.17.2（地板把 log4j-api/core/jul/slf4j-impl 四条**直接**钉在 2.25.4）：
              本仓基线 dependency:tree 实测跑的就是 2.17.2（四支：api/core/jul/slf4j-impl），而且
@@ -143,18 +144,11 @@
                 <version>${project.version}</version>
             </dependency>
 
-            <!-- ===== 刻意与父链不同值的两格：只能写成**直接** DM 条目 =====
-                 （`import` 顶不过继承来的直接 DM，见上面 properties 里那两段理由） -->
-            <dependency>
-                <groupId>io.github.yuku123</groupId>
-                <artifactId>z-boot-web-starter</artifactId>
-                <version>${z-boot.version}</version>
-            </dependency>
-            <dependency>
-                <groupId>io.github.yuku123</groupId>
-                <artifactId>z-boot-datasource-starter</artifactId>
-                <version>${z-boot.version}</version>
-            </dependency>
+            <!-- ===== 曾经"刻意与父链不同值"的两格：2026-09-29 消费者轮已删除 =====
+                 z-boot-web-starter / z-boot-datasource-starter 原本在这里写成**直接** DM 条目压到 1.0.17
+                 （`import` 顶不过继承来的直接 DM，见上面 properties 里那段理由），现在两格连版本键一起撤掉，
+                 面值由 <parent> z-boot-parent:1.0.21 的直接条目供 ⇒ 本仓不再有任何与父链不同值的 z-boot 格。
+                 下面那四条 log4j 直接条目**留着**：那一格仍是刻意与父链不同值（2.17.2 vs 地板 2.25.4）。 -->
             <!-- 这四条是按坐标量出来的（基线 dependency:tree 里 log4j 命中的就是这四支），
                  不是照抄 z-cache。log4j-to-slf4j 不在此列：它跟着 spring-boot-starter-logging
                  一起被地板的通配 exclusion 摘掉，写不写都进不了树。 -->
