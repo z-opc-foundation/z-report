@@ -42,7 +42,7 @@ schema 契约（`z-report-common`），服务端只做 typed 列式计算与 ech
 | 报表书与发布 | `BookService` · `InMemoryBookService` · `PublicationSnapshot` | Book 树状编排（章节/页面），`publish()` 产出不可变快照并生成分享 token，`getPublication` 强制校验 token |
 | AI 生成（M3） | `AiReportService` · `LlmClient` SPI · `OpenAiCompatLlmClient` | NL→数据集 / NL→视图页两段式，产物先过本地契约校验再入库；LLM 未配置时零配置可启动（调用才抛配置指引） |
 | 内置模板 | `TemplateController` | `sales-overview`（内存 demo 源 + 数据集 + 视图 + 书），apply 幂等：demo 三件按固定 id 复用，报表书每次新建 |
-| schema 存储 SPI | `SchemaStore` · `InMemorySchemaStore` | 接口化收口，提供同名 DB Bean 替换 `@Component` 注册即整体切换；DDL 见 [`_doc/sql/001_schema.sql`](_doc/sql/001_schema.sql)（6 张表，schema 全文存 JSON 列） |
+| schema 存储 SPI | `SchemaStore` · `InMemorySchemaStore` | 接口化收口，提供同名 DB Bean 替换 `@Component` 注册即整体切换；DDL 见 [`_doc/002_deploy/init/001_schema.sql`](_doc/002_deploy/init/001_schema.sql)（6 张表，schema 全文存 JSON 列） |
 | 统一错误出口 | `ApiErrorAdvice` | 契约/整形程序不合法 → 400，状态类冲突 → 409，其余 → 500，响应体 `{ok:false, status, error}` |
 | 一行接入 | [`z-report-spring-boot-starter`](z-report-spring-boot-starter/) | `ZReportAutoConfiguration` 走 `AutoConfiguration.imports`，`@ComponentScan("com.zifang.z.report")` |
 
@@ -203,7 +203,7 @@ mvn test -Dtest=EndToEndFlowTest          # 全链路 MockMvc
 ## 📦 构建与发布形态
 
 本仓**没有任何部署资产**：实测无 `Dockerfile`、无 `docker-compose*.yml`、无 `deploy/`、无 `k8s/`、
-无 `Makefile`，也没有 `_doc/002_deploy/`（`_doc/` 走的是本仓自己的命名，见「文档目录」）。
+无 `Makefile`，也没有 [`_doc/002_deploy/`](_doc/002_deploy/)（`_doc/` 走的是本仓自己的命名，见「文档目录」）。
 对外发布同样未开：`z-report` 全家 40 次 repo1 GET 全 404（含 `maven-metadata.xml`）。
 => 目前交付方式只有「本地 `mvn install` + `java -jar` / 联调」，容器化与发版待仓库负责人补。
 
@@ -218,7 +218,7 @@ mvn test -Dtest=EndToEndFlowTest          # 全链路 MockMvc
 
 ## 🗺️ 现状与未填坑
 
-以代码为准的取舍（细节与优先级见 [`_doc/002_失败要点与坑.md`](_doc/002_失败要点与坑.md) 第三节）：
+以代码为准的取舍（细节与优先级见 [`_doc/008_troubleshooting/失败要点与坑.md`](_doc/008_troubleshooting/失败要点与坑.md) 第三节）：
 
 - **持久化未落地**：`SchemaStore` / `BookService` 现为内存实现，重启即失；DB 实现（MyBatis-Plus + JSON 列）
   只需替换同名 Bean，DDL 已备。
@@ -235,9 +235,9 @@ mvn test -Dtest=EndToEndFlowTest          # 全链路 MockMvc
 本仓 `_doc/` **尚未套用组织规范的 `001_arch` / `002_deploy` 目录结构**（历史遗留：文档在 z-report-local
 工作区写成，随代码并入时保留了原名）。以下链接按今天的真实路径给出，未擅自搬迁：
 
-- [`_doc/001_方案设计.md`](_doc/001_方案设计.md) — 产品定位、六级概念模型、四项关键技术决策、模块划分、数据流、分期路线（M1/M2/M3）与待定项（v1.0，2026-09-22）
-- [`_doc/002_失败要点与坑.md`](_doc/002_失败要点与坑.md) — 已踩坑与**留给同伴的未填坑**（P-01…P-10）+ 接手 5 分钟导览；其中"代码不进 git / 正式仓零 commit / 62 个测试"等表述写作于并入之前，已过期，以本 README 与代码为准
-- [`_doc/sql/001_schema.sql`](_doc/sql/001_schema.sql) — 落库 DDL：`report_book` / `report_book_node` / `report_data_source` / `report_dataset` / `report_view` / `report_publication` 六表，schema 全文存 JSON 列（对齐 z-lc viewconfig 模式），审计列与主键风格对齐 z-boot
+- [`_doc/001_arch/08-design.md`](_doc/001_arch/08-design.md) — 产品定位、六级概念模型、四项关键技术决策、模块划分、数据流、分期路线（M1/M2/M3）与待定项（v1.0，2026-09-22）
+- [`_doc/008_troubleshooting/失败要点与坑.md`](_doc/008_troubleshooting/失败要点与坑.md) — 已踩坑与**留给同伴的未填坑**（P-01…P-10）+ 接手 5 分钟导览；其中"代码不进 git / 正式仓零 commit / 62 个测试"等表述写作于并入之前，已过期，以本 README 与代码为准
+- [`_doc/002_deploy/init/001_schema.sql`](_doc/002_deploy/init/001_schema.sql) — 落库 DDL：`report_book` / `report_book_node` / `report_data_source` / `report_dataset` / `report_view` / `report_publication` 六表，schema 全文存 JSON 列（对齐 z-lc viewconfig 模式），审计列与主键风格对齐 z-boot
 
 配置与前端事实源另见 [`z-report-bootstrap/src/main/resources/application.yml`](z-report-bootstrap/src/main/resources/application.yml)
 与 [`_frontend/`](_frontend/)。
