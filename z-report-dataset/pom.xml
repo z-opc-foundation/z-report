@@ -42,10 +42,5 @@
         <!-- 依赖方向: datasource → dataset (引擎类型 Table/FieldType); dataset 经 TableSourceResolver 倒置源解析 -->
         <!-- TODO(M2): 接入 z-util-math 数值函数与 z-util-expr 表达式引擎
              (待确认 Maven Central artifact 版本后打开, 接口已留切换缝) -->
-        <dependency>
-            <groupId>org.junit.jupiter</groupId>
-            <artifactId>junit-jupiter</artifactId>
-            <scope>test</scope>
-        </dependency>
     </dependencies>
 </project>

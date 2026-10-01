@@ -23,10 +23,5 @@
             <groupId>io.github.yuku123</groupId>
             <artifactId>z-report-common</artifactId>
         </dependency>
-        <dependency>
-            <groupId>org.junit.jupiter</groupId>
-            <artifactId>junit-jupiter</artifactId>
-            <scope>test</scope>
-        </dependency>
     </dependencies>
 </project>
