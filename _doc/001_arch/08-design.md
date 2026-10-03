@@ -42,7 +42,7 @@
 | z-lc AiModelingService | "对话式建模"：走 z-agent-llm-gateway 的 LlmGatewayService（UnifiedRequest/Response），能力以 MCP Tool 暴露给 z-agent | "一句话生成报表"的现成范式，照此模式做"对话式报表生成" |
 | z-util-math | Pandas 风格 DataFrame/Series：merge/groupby/query/sort/rolling/describe/CSV 读写 | 内存计算引擎 API 形态的标杆；数值聚合函数复用。**注意：double 中心化、单键 join，不能直接当 BI 引擎（见 4.1 决策①）** |
 | z-util-expr | 表达式引擎聚合：JS/SQL/Groovy/Lua/EL（自研 lexer/parser/AST） | 数据集"计算字段"、过滤条件的表达式求值 |
-| z-util-workflow | 节点式 DAG 引擎（WorkFlowApplication/WorkflowNode/Connector/持久化/BPMN） | ★ 数据集转换管道的执行器：抽取→join→派生列→聚合 建模为节点图 |
+| z-util-wf-kernel | 节点式 DAG 引擎家族核心（WorkFlowApplication/WorkflowNode/Connector/持久化/BPMN/runtime/EngineFactory 自注册） | ★ 数据集转换管道的执行器：抽取→join→派生列→聚合 建模为节点图（执行器按需拉 `z-util-wf-executor-java` / `z-util-wf-py`） |
 | z-util-jdbc | DataSource/事务/轻量 ORM | 多数据源连接管理底座 |
 | z-util-parser | json/xml/yaml/csv/ini/properties/proto/toml 多格式解析 | CSV/JSON 文件数据源接入 |
 | z-util-http | 注解式 HTTP client | HTTP/API 型数据源 |
@@ -106,7 +106,7 @@ z-util 复用矩阵：
 |---|---|
 | z-util-math | pandas 风格 API 标杆 + 数值函数复用 |
 | z-util-expr | 计算字段、过滤表达式求值 |
-| z-util-workflow | 数据集转换 DAG 执行器（后期可可视化编排管道） |
+| z-util-wf-kernel | 数据集转换 DAG 执行器（后期可可视化编排管道） |
 | z-util-jdbc | MySQL 等库表数据源 + 连接管理 |
 | z-util-parser | CSV/JSON 文件数据源接入 |
 | z-util-http | HTTP/API 型数据源 |
@@ -168,7 +168,7 @@ z-report/
 ```
 DataSource(MySQL/HTTP/CSV)
    → Dataset 定义(物理表|SQL|多源join视图 + 计算字段)
-   → z-util-workflow DAG: 下推SQL抽数 → 内存 Table 多键join → expr派生列 → groupby聚合
+   → z-util-wf-kernel DAG: 下推SQL抽数 → 内存 Table 多键join → expr派生列 → groupby聚合
    → 小结果集(JSON)
    → Widget 绑定字段 → UniversalRenderer 渲染
    → View 页面 → Book 树状组织 → 整体发布快照(分享token/SSO) → 他人只读查看

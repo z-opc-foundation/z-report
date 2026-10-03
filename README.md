@@ -225,7 +225,7 @@ mvn test -Dtest=EndToEndFlowTest          # 全链路 MockMvc
 - **渲染端点无鉴权**：`/api/render/**`、`/api/dataset/**` 等口子全开（P-04），分享只有 publication token 一层。
 - **数据源凭据明文**：REST 注册的源属性未加密（P-05）。
 - **执行引擎全量内存语义**：`max-rows` 截断，非下推（P-08）；结果缓存为单机 TTL（P-02）。
-- **未接入**：`z-util-workflow` 转换 DAG 编排、`z-util-expr` 表达式引擎扩展缝、`DataSourceType.HTTP` 实现、
+- **未接入**：`z-util-wf-kernel` 转换 DAG 编排、`z-util-expr` 表达式引擎扩展缝、`DataSourceType.HTTP` 实现、
   前端拖拽编辑器（M4）。
 
 ---
