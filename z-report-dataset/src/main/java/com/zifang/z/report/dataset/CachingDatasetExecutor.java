@@ -5,8 +5,10 @@ import com.zifang.z.report.common.schema.DatasetSchema;
 import com.zifang.z.report.common.schema.JoinDef;
 import com.zifang.z.report.common.schema.QueryResult;
 import com.zifang.z.report.common.schema.WidgetFilter;
-import com.zifang.util.cache.Cache;
-import com.zifang.util.cache.CacheBuilder;
+// 2026-10-04: 原 com.zifang.util.cache.* —— z-util/pom.xml:141「z-util-cache 已合并到
+// z-util-pattern 子模块下 (2026-10-02)」, 老包随之消失, 改指合并后的新包。
+import com.zifang.util.core.pattern.cache.Cache;
+import com.zifang.util.core.pattern.cache.CacheBuilder;
 
 import java.time.Duration;
 import java.util.List;
