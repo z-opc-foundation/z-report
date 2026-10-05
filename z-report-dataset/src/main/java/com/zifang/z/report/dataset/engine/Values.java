@@ -45,6 +45,40 @@ final class Values {
         }
     }
 
+    /**
+     * 整数值 → long（不经 double，避免 53 位尾数舍入）。
+     * <p>
+     * 与 {@link #toDouble} 的区别就在这里：{@code ((Number) 9007199254740993L).doubleValue()}
+     * 得到 9007199254740992.0，再转回 long 已经是错的数。报表里以分为单位的累计额、
+     * 纳秒/微秒时间戳求和都会踩到，故单独提供不经过 double 的通道。
+     */
+    static long toLong(Object v) {
+        if (v == null) {
+            return 0L;
+        }
+        if (v instanceof Byte || v instanceof Short || v instanceof Integer || v instanceof Long) {
+            return ((Number) v).longValue();
+        }
+        if (v instanceof java.math.BigInteger) {
+            return ((java.math.BigInteger) v).longValue();
+        }
+        if (v instanceof Number) {
+            return ((Number) v).longValue();
+        }
+        if (v instanceof Boolean) {
+            return (Boolean) v ? 1L : 0L;
+        }
+        try {
+            return Long.parseLong(String.valueOf(v).trim());
+        } catch (NumberFormatException e) {
+            try {
+                return (long) Double.parseDouble(String.valueOf(v).trim());
+            } catch (NumberFormatException e2) {
+                return 0L;
+            }
+        }
+    }
+
     static boolean isInteger(Object v) {
         return v instanceof Byte || v instanceof Short || v instanceof Integer || v instanceof Long;
     }

@@ -34,17 +34,29 @@ final class Aggs {
     }
 
     private static Object sum(List<Object> values) {
+        // 先判类型，再选累加器 —— 早前是"一路 double 累加、最后按 allInt 转 long"，
+        // 而 double 只有 53 位尾数，超过 2^53 的整数在转 long 之前就已经被舍入掉了。
+        // 实测：SUM(单笔 9007199254740993L) 返回 9007199254740992（差 1），
+        // 且 BigDecimal / 以分为单位的累计额 / 纳秒时间戳累加都会踩到。
         boolean allInt = true;
-        double acc = 0;
         for (Object v : values) {
             if (!Values.isInteger(v)) {
                 allInt = false;
+                break;
             }
-            acc += Values.toDouble(v);
         }
-        // 注意: 不可写 allInt ? (long) acc : acc —— 三元数值提升会把 Long 分支吞成 Double
         if (allInt) {
-            return (long) acc;
+            // 全整数：long 累加，不经过 double，精度到 Long.MAX_VALUE
+            long acc = 0L;
+            for (Object v : values) {
+                acc += Values.toLong(v);
+            }
+            return acc;
+        }
+        // 含浮点：double 累加（此时 53 位精度已是该类型的固有上限）
+        double acc = 0;
+        for (Object v : values) {
+            acc += Values.toDouble(v);
         }
         return acc;
     }
