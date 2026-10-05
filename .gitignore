@@ -60,3 +60,7 @@ application-local.yml
 
 # ---------- JVM crash ----------
 hs_err_pid*
+
+# 仓内发布凭据（Sonatype Token + GPG passphrase）
+.env
+.env.bak
