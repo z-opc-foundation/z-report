@@ -294,6 +294,21 @@
                         <version>3.1.4</version>
                         <configuration><skip>true</skip></configuration>
                     </plugin>
+                    <!-- ⚠️ 2026-10-05 补：中央强制要求每个构件带 sources jar，缺了校验不过，
+                         deployment 会卡在 uploaded 永不发布（z-opcs/z-report 首次发版即因此未上线）。
+                         抄 maven-central-publish 那份标准配置时漏了这个插件 —— 那份文档本身也缺，
+                         已在 lead 侧标注。写法照 z-boot/pom.xml 的 central profile。 -->
+                    <plugin>
+                        <groupId>org.apache.maven.plugins</groupId>
+                        <artifactId>maven-source-plugin</artifactId>
+                        <version>3.3.1</version>
+                        <executions>
+                            <execution>
+                                <id>attach-sources</id>
+                                <goals><goal>jar-no-fork</goal></goals>
+                            </execution>
+                        </executions>
+                    </plugin>
                     <plugin>
                         <groupId>org.apache.maven.plugins</groupId>
                         <artifactId>maven-javadoc-plugin</artifactId>
