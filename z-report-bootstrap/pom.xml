@@ -40,7 +40,9 @@
                         </goals>
                     </execution>
                 </executions>
-            </plugin>
+            
+                    <version>2.7.18</version>
+                </plugin>
         </plugins>
     </build>
 </project>
