@@ -243,3 +243,5 @@ mvn test -Dtest=EndToEndFlowTest          # 全链路 MockMvc
 与 [`_frontend/`](_frontend/)。
 
 _由 z-opc-foundation 组织维护。_
+
+<!-- icon: minimax image-01, gradient=#2563eb, glyph=rep -->
