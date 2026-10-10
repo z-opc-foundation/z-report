@@ -1,1 +1,1 @@
-export {routeTable, Home, ViewPage, SharePage, AiPage} from './pages-manifest.jsx'
+export {routes, Home, ViewPage, SharePage, AiPage} from './pages-manifest.jsx'

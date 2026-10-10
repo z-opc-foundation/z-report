@@ -4,7 +4,7 @@ import SharePage from './pages/SharePage'
 import AiPage from './pages/AiPage'
 
 /** 路由清单（lead 005 §8.2 manifest，HashRouter）。 */
-export const routeTable = [
+export const routes = [
     {path: '', Component: Home},
     {path: 'view/:viewId', Component: ViewPage},
     {path: 'share/:publishId', Component: SharePage},
